@@ -3,6 +3,16 @@ import path from 'node:path'
 
 const BUILD_SCRIPT_REAL_SUFFIX = '.mbx-real'
 
+export function targetCacheStore(toolDirectory: string, configuredRoot?: string): {
+  root: string
+  outputs: string
+} {
+  const root = path.resolve(
+    configuredRoot || path.join(path.dirname(toolDirectory), 'mbx-target-store')
+  )
+  return {root, outputs: path.join(root, 'out-dirs')}
+}
+
 interface CargoMetadata {
   packages: {
     name: string
@@ -77,7 +87,9 @@ async function pruneTargetDirectory(directory: string, keep: KeepSets): Promise<
   for (const entry of await readdir(directory, {withFileTypes: true})) {
     const child = path.join(directory, entry.name)
     if (!entry.isDirectory()) {
-      if (entry.name !== 'CACHEDIR.TAG') await remove(child)
+      // cargo-hold needs its manifest from the same build as the artifacts
+      // to restore timestamps only for content-identical source inputs.
+      if (!['CACHEDIR.TAG', 'cargo-hold.metadata'].includes(entry.name)) await remove(child)
       continue
     }
     const isProfile = await Promise.all(

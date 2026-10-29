@@ -44,7 +44,13 @@ The action disables mbx-managed target views and native-link object caching so
 it can transport the in-place `target` tree without also transporting mbx's
 object cache. The post step removes final products and unrelated Cargo state
 before saving, while retaining fingerprints, dependencies, build-script state,
-and the registry. Full mbx executables used by build-script shims, including
+and the registry. It also transports mbx's stable generated `out-dirs` trees:
+Cargo dep-info references those inputs outside `target`, so omitting them
+invalidates otherwise warm dependencies. Target mode sets `MBX_CACHE_DIR` to a
+dedicated runner-temporary store unless already configured, and archives only
+its `out-dirs` subtree, not its object cache. The additional archive path starts
+a new cache version; the first run must warm it before reuse can be measured.
+Full mbx executables used by build-script shims, including
 legacy hard-linked copies, are omitted from transport and rehydrated from the
 installed mbx after restore; tiny launchers and Cargo freshness timestamps
 remain intact. When `version` pins an exact release, the archive also carries

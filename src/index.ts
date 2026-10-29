@@ -63,7 +63,8 @@ import {
   dehydrateMbxShimBinaries,
   hasReusableCargoTarget,
   hydrateMbxShimBinaries,
-  pruneCargoTargetCache
+  pruneCargoTargetCache,
+  targetCacheStore
 } from './target-cache.js'
 
 const POST_STATE = 'mbx-post'
@@ -500,6 +501,14 @@ async function main(): Promise<void> {
     path.join(cargoHome, 'git'),
     targetToolDirectory
   ]
+  if (targetCache) {
+    // Cargo dep-info references generated inputs in mbx's external OUT_DIR.
+    // Transport those inputs with the target tree, but not the object store.
+    // Use an explicit root so restore does not require installing mbx first.
+    const store = targetCacheStore(targetToolDirectory, process.env.MBX_CACHE_DIR)
+    core.exportVariable('MBX_CACHE_DIR', store.root)
+    targetPaths.push(store.outputs)
+  }
   const cachePaths = githubCacheMode === 'target' ? targetPaths : [cacheArchive]
   if (isolatedObjectsPaths) {
     core.saveState(CACHE_ISOLATION_ROOT_STATE, isolatedObjectsPaths.root)

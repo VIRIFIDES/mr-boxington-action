@@ -8,7 +8,8 @@ import {
   hasReusableCargoTarget,
   hydrateMbxShimBinaries,
   matchesCargoEntry,
-  pruneCargoTargetCache
+  pruneCargoTargetCache,
+  targetCacheStore
 } from '../src/target-cache.js'
 
 const metadata = JSON.stringify({
@@ -22,6 +23,16 @@ const metadata = JSON.stringify({
 })
 
 describe('target cache pruning', () => {
+  it('transports generated outputs without including the mbx object store', () => {
+    const tool = path.resolve('runner-temp', 'mbx-target-tool')
+    const store = targetCacheStore(tool)
+    expect(store.root).toBe(path.resolve('runner-temp', 'mbx-target-store'))
+    expect(store.outputs).toBe(path.join(store.root, 'out-dirs'))
+    const custom = targetCacheStore(tool, 'custom-mbx-store')
+    expect(custom.root).toBe(path.resolve('custom-mbx-store'))
+    expect(custom.outputs).toBe(path.join(custom.root, 'out-dirs'))
+  })
+
   it('derives Cargo artifact names from packages and targets', () => {
     const keep = cargoKeepSets(metadata)
     expect(keep.packages).toContain('my-package')
